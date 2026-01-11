@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>@musiq.addicted</title>
+  <!-- Video.js CSS -->
+  <link href="https://vjs.zencdn.net/8.10.0/video-js.min.css" rel="stylesheet" />
+  <style>
+    :root {
+      --primary: #242526;
+      --accent: #3a3b3c;
+      --highlight: #4e4f50;
+      --text: #e4e6eb;
+      --active: #1877f2;
+      --overlay-fade: 1s;
+      --overlay-hide-delay: 2200ms;
+    }
+    body {
+      background: var(--primary);
+      color: var(--text);
+      font-family: 'Segoe UI', Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      max-width: 480px;
+      width: 100%;
+      padding: 16px;
+    }
+    .video-title-overlay {
+      position: absolute;
+      top: 12px;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      font-weight: bold;
+      color: var(--text);
+      text-shadow: 0 2px 8px #000;
+      font-size: 1.15rem;
+      pointer-events: none;
+      z-index: 3;
+      padding-bottom: 4px;
+      opacity: 1;
+      transition: opacity var(--overlay-fade) ease;
+    }
+    .video-title-overlay.hide {
+      opacity: 0;
+      transition: opacity var(--overlay-fade) ease;
+    }
+    .player-wrapper {
+      position: relative;
+      background: var(--accent);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 12px #0006;
+    }
+    .playlist {
+      display: none;
+    }
+    .playlist-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+    .playlist-list li {
+      padding: 11px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--highlight);
+      transition: background 0.2s;
+      color: var(--text);
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .playlist-list li.active {
+      background: var(--active);
+      color: #fff;
+    }
+    .playlist-list li:hover {
+      background: var(--highlight);
+    }
+    .controls-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 12px 0;
+      background: var(--primary);
+      border-radius: 0 0 12px 12px;
+      position: relative;
+      z-index: 2;
+    }
+    .video-btn {
+      background: var(--accent);
+      border: none;
+      color: var(--text);
+      border-radius: 6px;
+      cursor: pointer;
+      padding: 7px 12px;
+      transition: background 0.2s;
+      outline: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 40px;
+      min-height: 40px;
+    }
+    .video-btn:active,
+    .video-btn.active {
+      background: var(--active);
+      color: #fff;
+    }
+    /* Play/Pause SVG switching */
+    #playpause-btn .icon-play { display: block; }
+    #playpause-btn .icon-pause { display: none; }
+    #playpause-btn.playing .icon-play { display: none; }
+    #playpause-btn.playing .icon-pause { display: block; }
+    @media (max-width: 600px) {
+      .container {
+        max-width: 100vw;
+        padding: 5px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="player-wrapper">
+      <div class="video-title-overlay" id="video-title-overlay"></div>
+      <video
+        id="my-video"
+        class="video-js vjs-theme-forest"
+        controls
+        preload="auto"
+        width="100%"
+        height="240"
+        poster="image.jpg"
+        data-setup='{}'
+        playsinline
+      >
+        <!-- Sources are set dynamically -->
+      </video>
+      <div class="controls-bar">
+        <button id="prev-btn" title="Previous" class="video-btn">
+          <!-- Prev SVG -->
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+            <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="4" y="4" width="2.2" height="16" rx="1.1" fill="currentColor"/>
+          </svg>
+        </button>
+        <button id="playpause-btn" title="Play/Pause" class="video-btn">
+          <!-- Play SVG (shown when paused) -->
+          <svg class="icon-play" width="26" height="26" viewBox="0 0 24 24" fill="none">
+            <polygon points="6,4 20,12 6,20" fill="currentColor"/>
+          </svg>
+          <!-- Pause SVG (shown when playing) -->
+          <svg class="icon-pause" width="26" height="26" viewBox="0 0 24 24" fill="none">
+            <rect x="6" y="4" width="4" height="16" fill="currentColor"/>
+            <rect x="14" y="4" width="4" height="16" fill="currentColor"/>
+          </svg>
+        </button>
+        <button id="next-btn" title="Next" class="video-btn">
+          <!-- Next SVG -->
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+            <path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="18" y="4" width="2.2" height="16" rx="1.1" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="playlist">
+      <ul class="playlist-list" id="playlist-list"></ul>
+    </div>
+  </div>
+  <!-- Video.js JS -->
+  <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+  <script>
+    // Video playlist array
+    const playlist = [
+
+
+{ title: "ennilum ninnilum", url: "https://files.catbox.moe/codz6w.mp4" }, 
+
+{ title: "u2 - with or without you", url: "https://files.catbox.moe/6znr9p.mp4" },      
+{ title: "uyirin nadhiye", url: "https://files.catbox.moe/hn6x0c.mp4" },
+{ title: "seetha kalyanana", url: "https://files.catbox.moe/ipnwfa.mp4" },
+{ title: "neeyillaa neram", url: "https://files.catbox.moe/or3qof.mp4" },
+{ title: "veyil chilla", url: "https://files.catbox.moe/8eo9yi.mp4" },
+{ title: "thinkal nilaavil", url: "https://files.catbox.moe/yunndt.mp4" },
+{ title: "mayaanadhi", url: "https://files.catbox.moe/t9ro85.mp4" },
+{ title: "Rendu Kaadhal", url: "https://files.catbox.moe/2owolg.mp4" },
+
+
+      
+{ title: "kinavu kondoru", url: "https://files.catbox.moe/otgfmf.mp4" },      
+
+{ title: "rithu shalabhame", url: "https://files.catbox.moe/1nrwxk.mp4" },  
+{ title: "cherathe", url: "https://files.catbox.moe/j8sevz.mp4" },
+       
+       
+      
+    ];
+    let currentIdx = 0;
+
+    // Video.js player
+    const player = videojs('my-video', {
+      controls: true,
+      preload: 'auto',
+      fluid: true,
+      aspectRatio: '16:9',
+    });
+
+    // Title overlay logic
+    const titleOverlay = document.getElementById('video-title-overlay');
+    let overlayTimeout = null;
+    function setTitleOverlay(title, autoHide = true) {
+      titleOverlay.textContent = title;
+      titleOverlay.classList.remove('hide');
+      if (overlayTimeout) clearTimeout(overlayTimeout);
+      if (autoHide) {
+        overlayTimeout = setTimeout(() => {
+          titleOverlay.classList.add('hide');
+        }, 2200);
+      }
+    }
+    function showTitleOverlay() {
+      setTitleOverlay(playlist[currentIdx].title, true);
+    }
+
+    // Playlist rendering
+    const playlistList = document.getElementById('playlist-list');
+    function renderPlaylist() {
+      playlistList.innerHTML = '';
+      playlist.forEach((video, idx) => {
+        const li = document.createElement('li');
+        li.textContent = video.title;
+        li.classList.toggle('active', idx === currentIdx);
+        li.onclick = () => loadVideo(idx);
+        playlistList.appendChild(li);
+      });
+    }
+
+    // Load video by index
+    function loadVideo(idx, autoplay = true) {
+      currentIdx = idx;
+      const video = playlist[idx];
+      player.src({ src: video.url, type: 'video/mp4' });
+      setTitleOverlay(video.title, true);
+      renderPlaylist();
+      updatePlayPauseBtn();
+      if (autoplay) player.play();
+    }
+
+    // Controls bar
+    document.getElementById('prev-btn').onclick = () => {
+      let prevIdx = currentIdx - 1;
+      if (prevIdx < 0) prevIdx = playlist.length - 1;
+      loadVideo(prevIdx);
+    };
+    document.getElementById('next-btn').onclick = () => {
+      let nextIdx = currentIdx + 1;
+      if (nextIdx >= playlist.length) nextIdx = 0;
+      loadVideo(nextIdx);
+    };
+
+    // Play/Pause toggle with SVG icon switching
+    const playpauseBtn = document.getElementById('playpause-btn');
+    function updatePlayPauseBtn() {
+      if (player.paused()) {
+        playpauseBtn.classList.remove('playing');
+      } else {
+        playpauseBtn.classList.add('playing');
+      }
+    }
+    playpauseBtn.onclick = () => {
+      if (player.paused()) player.play();
+      else player.pause();
+      updatePlayPauseBtn();
+      showTitleOverlay();
+    };
+
+    // Video events
+    player.on('play', () => {
+      updatePlayPauseBtn();
+      showTitleOverlay();
+      scrollActiveIntoView();
+    });
+    player.on('pause', updatePlayPauseBtn);
+    player.on('loadeddata', () => {
+      updatePlayPauseBtn();
+      scrollActiveIntoView();
+    });
+
+    // Handle video ended: play next
+    player.on('ended', function() {
+      let nextIdx = currentIdx + 1;
+      if (nextIdx >= playlist.length) nextIdx = 0;
+      loadVideo(nextIdx);
+    });
+
+    // Initial load
+    window.onload = () => {
+      renderPlaylist();
+      loadVideo(currentIdx, false);
+      updatePlayPauseBtn();
+      setTitleOverlay(playlist[currentIdx].title, true);
+    };
+
+    // Playlist click scroll into view for active
+    function scrollActiveIntoView() {
+      const active = playlistList.querySelector('.active');
+      if (active) active.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  </script>
+</body>
+</html>
